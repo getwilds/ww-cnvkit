@@ -1,0 +1,11 @@
+{
+    "CNVKit.sample_id": "SAMPLE-001",
+    "CNVKit.tumor_bam": "/path/to/tumor.bam",
+    "CNVKit.normal_bam": "/path/to/normal.bam",
+    "CNVKit.reference_fasta": "/path/to/reference.fa",
+    "CNVKit.target_bed": "/path/to/targets.bed",
+    "CNVKit.method": "hybrid",
+    "CNVKit.diagram": true,
+    "CNVKit.scatter": true,
+    "CNVKit.heatmap": true
+  }
