@@ -1,11 +1,8 @@
 {
-    "CNVKit.sample_id": "SAMPLE-001",
-    "CNVKit.tumor_bam": "/path/to/tumor.bam",
-    "CNVKit.normal_bam": "/path/to/normal.bam",
-    "CNVKit.reference_fasta": "/path/to/reference.fa",
-    "CNVKit.target_bed": "/path/to/targets.bed",
-    "CNVKit.method": "hybrid",
-    "CNVKit.diagram": true,
-    "CNVKit.scatter": true,
-    "CNVKit.heatmap": true
+    "cnvkit_analysis.sample_id": "SAMPLE-001",
+    "cnvkit_analysis.tumor_bam": "/path/to/tumor.bam",
+    "cnvkit_analysis.normal_bam": "/path/to/normal.bam",
+    "cnvkit_analysis.reference_fasta": "/path/to/reference.fa",
+    "cnvkit_analysis.target_bed": "/path/to/targets.bed",
+    "cnvkit_analysis.method": "hybrid"
   }

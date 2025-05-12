@@ -1,30 +1,25 @@
 version 1.0
 
-workflow CNVKit {
+workflow cnvkit_analysis {
   input {
     # Sample information
     String sample_id
     File tumor_bam
-    File? normal_bam
-    
+    File normal_bam
+
     # Reference files
     File reference_fasta
     File? target_bed
     File? antitarget_bed
     File? reference_cnn
-    
+
     # Parameters
-    Int? scatter_count = 10
-    String? method = "hybrid"  # hybrid, amplicon, wgs
-    Boolean? diagram = true
-    Boolean? scatter = true
-    Boolean? heatmap = true
+    String method = "hybrid"  # hybrid, amplicon, wgs
   }
 
   # If reference_cnn is not provided, we need to create one
-  if (!defined(reference_cnn) && defined(normal_bam)) {
-    call BuildReference {
-      input:
+  if (!defined(reference_cnn)) {
+    call build_reference { input:
         normal_bam = normal_bam,
         reference_fasta = reference_fasta,
         target_bed = target_bed,
@@ -33,70 +28,58 @@ workflow CNVKit {
     }
   }
 
-  call BatchAnalysis {
-    input:
+  call batch_analysis { input:
       sample_id = sample_id,
       tumor_bam = tumor_bam,
       reference_fasta = reference_fasta,
-      reference_cnn = select_first([reference_cnn, BuildReference.reference_cnn]),
+      reference_cnn = select_first([reference_cnn, build_reference.reference_cnn]),
       target_bed = target_bed,
       antitarget_bed = antitarget_bed,
       method = method
   }
 
-  if (scatter) {
-    call ScatterPlot {
-      input:
-        cnr_file = BatchAnalysis.cnr_file,
-        cns_file = BatchAnalysis.cns_file,
-        sample_id = sample_id
-    }
+  call scatterp { input:
+      cnr_file = batch_analysis.cnr_file,
+      cns_file = batch_analysis.cns_file,
+      sample_id = sample_id
   }
 
-  if (diagram) {
-    call Diagram {
-      input:
-        cnr_file = BatchAnalysis.cnr_file,
-        sample_id = sample_id
-    }
+  call diagram { input:
+      cnr_file = batch_analysis.cnr_file,
+      sample_id = sample_id
   }
 
-  if (heatmap) {
-    call Heatmap {
-      input:
-        cnr_file = BatchAnalysis.cnr_file,
-        sample_id = sample_id
-    }
+  call heatmap { input:
+      cnr_file = batch_analysis.cnr_file,
+      sample_id = sample_id
   }
 
   output {
-    File cnr_file = BatchAnalysis.cnr_file
-    File cns_file = BatchAnalysis.cns_file
-    File? reference_cnn_out = BuildReference.reference_cnn
-    File? scatter_plot = ScatterPlot.scatter_plot
-    File? diagram_plot = Diagram.diagram_plot
-    File? heatmap_plot = Heatmap.heatmap_plot
+    File cnr_file = batch_analysis.cnr_file
+    File cns_file = batch_analysis.cns_file
+    File scatter_plot = scatterp.scatter_plot
+    File diagram_plot = diagram.diagram_plot
+    File heatmap_plot = heatmap.heatmap_plot
   }
 }
 
-task BuildReference {
+task build_reference {
   input {
     File normal_bam
     File reference_fasta
     File? target_bed
     File? antitarget_bed
-    String? method = "hybrid"
+    String method = "hybrid"
     Int memory_gb = 8
-    Int disk_size_gb = 100
     Int cpu = 4
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # If target BED is not provided, autodetect from the BAM file
     if [ -z "~{target_bed}" ]; then
-      cnvkit.py autobin ~{normal_bam} -m ~{method} -f ~{reference_fasta} --annotate
+      cnvkit.py autobin "~{normal_bam}" -m "~{method}" -f "~{reference_fasta}" --annotate
       TARGET_BED="on-target-annotated.bed"
       ANTITARGET_BED="off-target.bed"
     else
@@ -105,9 +88,9 @@ task BuildReference {
     fi
     
     # Build the reference
-    cnvkit.py batch ~{normal_bam} \
+    cnvkit.py batch "~{normal_bam}" \
       --normal \
-      --fasta ~{reference_fasta} \
+      --fasta "~{reference_fasta}" \
       --targets $TARGET_BED \
       --antitargets $ANTITARGET_BED \
       --output-reference reference.cnn \
@@ -121,31 +104,29 @@ task BuildReference {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
 
-task BatchAnalysis {
+task batch_analysis {
   input {
-    String sample_id
     File tumor_bam
     File reference_fasta
     File reference_cnn
+    String sample_id
     File? target_bed
     File? antitarget_bed
-    String? method = "hybrid"
+    String method = "hybrid"
     Int memory_gb = 8
-    Int disk_size_gb = 100
     Int cpu = 4
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # If target BED is not provided, autodetect from the BAM file
     if [ -z "~{target_bed}" ]; then
-      cnvkit.py autobin ~{tumor_bam} -m ~{method} -f ~{reference_fasta} --annotate
+      cnvkit.py autobin "~{tumor_bam}" -m "~{method}" -f "~{reference_fasta}" --annotate
       TARGET_BED="on-target-annotated.bed"
       ANTITARGET_BED="off-target.bed"
       TARGET_ARGS="-t $TARGET_BED -a $ANTITARGET_BED"
@@ -156,16 +137,16 @@ task BatchAnalysis {
     fi
     
     # Run CNVkit batch analysis
-    cnvkit.py batch ~{tumor_bam} \
-      -r ~{reference_cnn} \
-      -f ~{reference_fasta} \
+    cnvkit.py batch "~{tumor_bam}" \
+      -r "~{reference_cnn}" \
+      -f "~{reference_fasta}" \
       $TARGET_ARGS \
       --processes ~{cpu} \
       --output-dir ./
     
     # Rename output files with sample ID
-    mv */*.cnr ~{sample_id}.cnr
-    mv */*.cns ~{sample_id}.cns
+    mv ./*/*.cnr "~{sample_id}.cnr"
+    mv ./*/*.cns "~{sample_id}.cns"
   >>>
 
   output {
@@ -176,28 +157,26 @@ task BatchAnalysis {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
 
-task ScatterPlot {
+task scatterp {
   input {
     File cnr_file
     File cns_file
     String sample_id
     Int memory_gb = 4
-    Int disk_size_gb = 50
     Int cpu = 1
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # Generate scatter plot
-    cnvkit.py scatter ~{cnr_file} \
-      -s ~{cns_file} \
-      -o ~{sample_id}_scatter.pdf
+    cnvkit.py scatter "~{cnr_file}" \
+      -s "~{cns_file}" \
+      -o "~{sample_id}_scatter.pdf"
   >>>
 
   output {
@@ -207,26 +186,24 @@ task ScatterPlot {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
 
-task Diagram {
+task diagram {
   input {
     File cnr_file
     String sample_id
     Int memory_gb = 4
-    Int disk_size_gb = 50
     Int cpu = 1
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # Generate diagram
-    cnvkit.py diagram ~{cnr_file} \
-      -o ~{sample_id}_diagram.pdf
+    cnvkit.py diagram "~{cnr_file}" \
+      -o "~{sample_id}_diagram.pdf"
   >>>
 
   output {
@@ -236,26 +213,24 @@ task Diagram {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
 
-task Heatmap {
+task heatmap {
   input {
     File cnr_file
     String sample_id
     Int memory_gb = 4
-    Int disk_size_gb = 50
     Int cpu = 1
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # Generate heatmap
-    cnvkit.py heatmap ~{cnr_file} \
-      -o ~{sample_id}_heatmap.pdf
+    cnvkit.py heatmap "~{cnr_file}" \
+      -o "~{sample_id}_heatmap.pdf"
   >>>
 
   output {
@@ -265,7 +240,6 @@ task Heatmap {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
