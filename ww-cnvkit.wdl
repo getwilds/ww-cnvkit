@@ -17,7 +17,7 @@ workflow CNVKit {
     Int? scatter_count = 10
     String? method = "hybrid"  # hybrid, amplicon, wgs
     Boolean? diagram = true
-    Boolean? scatter = true
+    Boolean? scatterplt = true
     Boolean? heatmap = true
   }
 
@@ -44,7 +44,7 @@ workflow CNVKit {
       method = method
   }
 
-  if (scatter) {
+  if (scatterplt) {
     call ScatterPlot {
       input:
         cnr_file = BatchAnalysis.cnr_file,
