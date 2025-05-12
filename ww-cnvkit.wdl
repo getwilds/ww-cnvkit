@@ -91,8 +91,8 @@ task BuildReference {
     Int cpu = 4
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # If target BED is not provided, autodetect from the BAM file
     if [ -z "~{target_bed}" ]; then
@@ -121,7 +121,6 @@ task BuildReference {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
@@ -140,8 +139,8 @@ task BatchAnalysis {
     Int cpu = 4
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # If target BED is not provided, autodetect from the BAM file
     if [ -z "~{target_bed}" ]; then
@@ -176,7 +175,6 @@ task BatchAnalysis {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
@@ -191,8 +189,8 @@ task ScatterPlot {
     Int cpu = 1
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # Generate scatter plot
     cnvkit.py scatter ~{cnr_file} \
@@ -207,7 +205,6 @@ task ScatterPlot {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
@@ -221,8 +218,8 @@ task Diagram {
     Int cpu = 1
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # Generate diagram
     cnvkit.py diagram ~{cnr_file} \
@@ -236,7 +233,6 @@ task Diagram {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
@@ -250,8 +246,8 @@ task Heatmap {
     Int cpu = 1
   }
 
-  command <
-    set -e
+  command <<<
+    set -eo pipefail
     
     # Generate heatmap
     cnvkit.py heatmap ~{cnr_file} \
@@ -265,7 +261,6 @@ task Heatmap {
   runtime {
     docker: "getwilds/cnvkit:0.9.10"
     memory: "~{memory_gb} GB"
-    disks: "local-disk ~{disk_size_gb} SSD"
     cpu: cpu
   }
 }
