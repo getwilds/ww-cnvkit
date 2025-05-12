@@ -7,19 +7,19 @@ workflow cnvkit_analysis {
     description: "WDL workflow for copy number variant analysis using CNVkit"
     url: "https://github.com/getwilds/ww-cnvkit"
     outputs: {
-      cnr_file: "Copy number ratio file containing raw copy number data for each target bin",
-      cns_file: "Copy number segments file containing averaged log2 ratios of copy number across segments",
-      scatter_plot: "Scatter plot visualization of copy number across the genome",
-      diagram_plot: "Chromosome diagram showing copy number alterations",
-      heatmap_plot: "Heatmap visualization of copy number alterations across the sample"
+        cnr_file: "Copy number ratio file containing raw copy number data for each target bin",
+        cns_file: "Copy number segments file containing averaged log2 ratios of copy number across segments",
+        scatter_plot: "Scatter plot visualization of copy number across the genome",
+        diagram_plot: "Chromosome diagram showing copy number alterations",
+        heatmap_plot: "Heatmap visualization of copy number alterations across the sample"
     }
   }
 
   parameter_meta {
-    sample_id: "Unique identifier for the sample being analyzed"
     tumor_bam: "BAM file containing reads from the tumor sample"
     normal_bam: "BAM file containing reads from the normal sample (used as reference)"
     reference_fasta: "Reference genome in FASTA format"
+    sample_id: "Unique identifier for the sample being analyzed"
     target_bed: "BED file defining targeted genomic regions for analysis (optional, will be auto-detected if not provided)"
     antitarget_bed: "BED file defining off-target genomic regions to use (optional, will be auto-detected if not provided)"
     reference_cnn: "Pre-built CNVkit reference file (.cnn) (optional, will be created from normal_bam if not provided)"
@@ -27,18 +27,13 @@ workflow cnvkit_analysis {
   }
 
   input {
-    # Sample information
-    String sample_id
     File tumor_bam
     File normal_bam
-
-    # Reference files
     File reference_fasta
+    String sample_id
     File? target_bed
     File? antitarget_bed
     File? reference_cnn
-
-    # Parameters
     String method = "hybrid"  # hybrid, amplicon, wgs
   }
 
@@ -92,7 +87,7 @@ task build_reference {
   meta {
     description: "Task for building a CNVkit reference profile from normal samples."
     outputs: {
-      reference_cnn: "CNVkit reference file (.cnn) created from the normal sample, used for copy number calling"
+        reference_cnn: "CNVkit reference file (.cnn) created from the normal sample, used for copy number calling"
     }
   }
 
@@ -154,8 +149,8 @@ task batch_analysis {
   meta {
     description: "Task for running the main CNVkit analysis on tumor samples."
     outputs: {
-      cnr_file: "Copy number ratio file containing log2 ratios for each target bin",
-      cns_file: "Copy number segments file containing averaged log2 ratios across called segments"
+        cnr_file: "Copy number ratio file containing log2 ratios for each target bin",
+        cns_file: "Copy number segments file containing averaged log2 ratios across called segments"
     }
   }
 
@@ -227,7 +222,7 @@ task scatterp {
   meta {
     description: "Task for generating a genome-wide scatter plot of copy number data."
     outputs: {
-      scatter_plot: "PDF file containing a scatter plot of copy number data across the genome with segmentation"
+        scatter_plot: "PDF file containing a scatter plot of copy number data across the genome with segmentation"
     }
   }
 
@@ -271,7 +266,7 @@ task diagram {
   meta {
     description: "Task for generating a chromosome diagram of copy number alterations."
     outputs: {
-      diagram_plot: "PDF file containing a chromosome diagram with copy number alterations"
+        diagram_plot: "PDF file containing a chromosome diagram with copy number alterations"
     }
   }
 
@@ -312,7 +307,7 @@ task heatmap {
   meta {
     description: "Task for generating a heatmap visualization of copy number alterations."
     outputs: {
-      heatmap_plot: "PDF file containing a heatmap visualization of copy number data"
+        heatmap_plot: "PDF file containing a heatmap visualization of copy number data"
     }
   }
 
