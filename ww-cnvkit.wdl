@@ -1,6 +1,31 @@
 version 1.0
 
 workflow cnvkit_analysis {
+  meta {
+    author: "Taylor Firman"
+    email: "tfirman@fredhutch.org"
+    description: "WDL workflow for copy number variant analysis using CNVkit"
+    url: "https://github.com/getwilds/ww-cnvkit"
+    outputs: {
+      cnr_file: "Copy number ratio file containing raw copy number data for each target bin",
+      cns_file: "Copy number segments file containing averaged log2 ratios of copy number across segments",
+      scatter_plot: "Scatter plot visualization of copy number across the genome",
+      diagram_plot: "Chromosome diagram showing copy number alterations",
+      heatmap_plot: "Heatmap visualization of copy number alterations across the sample"
+    }
+  }
+
+  parameter_meta {
+    sample_id: "Unique identifier for the sample being analyzed"
+    tumor_bam: "BAM file containing reads from the tumor sample"
+    normal_bam: "BAM file containing reads from the normal sample (used as reference)"
+    reference_fasta: "Reference genome in FASTA format"
+    target_bed: "BED file defining targeted genomic regions for analysis (optional, will be auto-detected if not provided)"
+    antitarget_bed: "BED file defining off-target genomic regions to use (optional, will be auto-detected if not provided)"
+    reference_cnn: "Pre-built CNVkit reference file (.cnn) (optional, will be created from normal_bam if not provided)"
+    method: "Sequencing method used to generate data: 'hybrid' (default, for hybrid capture), 'amplicon', or 'wgs'"
+  }
+
   input {
     # Sample information
     String sample_id
@@ -64,6 +89,23 @@ workflow cnvkit_analysis {
 }
 
 task build_reference {
+  meta {
+    description: "Task for building a CNVkit reference profile from normal samples."
+    outputs: {
+      reference_cnn: "CNVkit reference file (.cnn) created from the normal sample, used for copy number calling"
+    }
+  }
+
+  parameter_meta {
+    normal_bam: "BAM file containing reads from the normal sample"
+    reference_fasta: "Reference genome in FASTA format"
+    target_bed: "BED file defining targeted genomic regions (optional, will be auto-detected if not provided)"
+    antitarget_bed: "BED file defining off-target genomic regions (optional, will be auto-detected if not provided)"
+    method: "Sequencing method: 'hybrid' (default), 'amplicon', or 'wgs'"
+    memory_gb: "Memory allocated for the task in GB"
+    cpu: "Number of CPU cores allocated for the task"
+  }
+
   input {
     File normal_bam
     File reference_fasta
@@ -109,6 +151,26 @@ task build_reference {
 }
 
 task batch_analysis {
+  meta {
+    description: "Task for running the main CNVkit analysis on tumor samples."
+    outputs: {
+      cnr_file: "Copy number ratio file containing log2 ratios for each target bin",
+      cns_file: "Copy number segments file containing averaged log2 ratios across called segments"
+    }
+  }
+
+  parameter_meta {
+    tumor_bam: "BAM file containing reads from the tumor sample"
+    reference_fasta: "Reference genome in FASTA format"
+    reference_cnn: "CNVkit reference file (.cnn) created from normal samples"
+    sample_id: "Unique identifier for the sample being analyzed"
+    target_bed: "BED file defining targeted genomic regions (optional, will be auto-detected if not provided)"
+    antitarget_bed: "BED file defining off-target genomic regions (optional, will be auto-detected if not provided)"
+    method: "Sequencing method: 'hybrid' (default), 'amplicon', or 'wgs'"
+    memory_gb: "Memory allocated for the task in GB"
+    cpu: "Number of CPU cores allocated for the task"
+  }
+
   input {
     File tumor_bam
     File reference_fasta
@@ -162,6 +224,21 @@ task batch_analysis {
 }
 
 task scatterp {
+  meta {
+    description: "Task for generating a genome-wide scatter plot of copy number data."
+    outputs: {
+      scatter_plot: "PDF file containing a scatter plot of copy number data across the genome with segmentation"
+    }
+  }
+
+  parameter_meta {
+    cnr_file: "CNVkit copy number ratio file (.cnr) containing bin-level copy number data"
+    cns_file: "CNVkit copy number segments file (.cns) containing segmented copy number data"
+    sample_id: "Unique identifier for the sample, used in output file naming"
+    memory_gb: "Memory allocated for the task in GB"
+    cpu: "Number of CPU cores allocated for the task"
+  }
+
   input {
     File cnr_file
     File cns_file
@@ -191,6 +268,20 @@ task scatterp {
 }
 
 task diagram {
+  meta {
+    description: "Task for generating a chromosome diagram of copy number alterations."
+    outputs: {
+      diagram_plot: "PDF file containing a chromosome diagram with copy number alterations"
+    }
+  }
+
+  parameter_meta {
+    cnr_file: "CNVkit copy number ratio file (.cnr) containing bin-level copy number data"
+    sample_id: "Unique identifier for the sample, used in output file naming"
+    memory_gb: "Memory allocated for the task in GB"
+    cpu: "Number of CPU cores allocated for the task"
+  }
+
   input {
     File cnr_file
     String sample_id
@@ -218,6 +309,20 @@ task diagram {
 }
 
 task heatmap {
+  meta {
+    description: "Task for generating a heatmap visualization of copy number alterations."
+    outputs: {
+      heatmap_plot: "PDF file containing a heatmap visualization of copy number data"
+    }
+  }
+
+  parameter_meta {
+    cnr_file: "CNVkit copy number ratio file (.cnr) containing bin-level copy number data"
+    sample_id: "Unique identifier for the sample, used in output file naming"
+    memory_gb: "Memory allocated for the task in GB"
+    cpu: "Number of CPU cores allocated for the task"
+  }
+
   input {
     File cnr_file
     String sample_id
