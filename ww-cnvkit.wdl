@@ -5,7 +5,7 @@ workflow CNVKit {
     # Sample information
     String sample_id
     File tumor_bam
-    File? normal_bam
+    File normal_bam
     
     # Reference files
     File reference_fasta
@@ -14,11 +14,7 @@ workflow CNVKit {
     File? reference_cnn
     
     # Parameters
-    Int? scatter_count = 10
-    String? method = "hybrid"  # hybrid, amplicon, wgs
-    Boolean? diagram = true
-    Boolean? scatterplt = true
-    Boolean? heatmap = true
+    String method = "hybrid"  # hybrid, amplicon, wgs
   }
 
   # If reference_cnn is not provided, we need to create one
@@ -44,38 +40,31 @@ workflow CNVKit {
       method = method
   }
 
-  if (scatterplt) {
-    call ScatterPlot {
-      input:
-        cnr_file = BatchAnalysis.cnr_file,
-        cns_file = BatchAnalysis.cns_file,
-        sample_id = sample_id
-    }
+  call ScatterPlot {
+    input:
+      cnr_file = BatchAnalysis.cnr_file,
+      cns_file = BatchAnalysis.cns_file,
+      sample_id = sample_id
   }
 
-  if (diagram) {
-    call Diagram {
-      input:
-        cnr_file = BatchAnalysis.cnr_file,
-        sample_id = sample_id
-    }
+  call Diagram {
+    input:
+      cnr_file = BatchAnalysis.cnr_file,
+      sample_id = sample_id
   }
 
-  if (heatmap) {
-    call Heatmap {
-      input:
-        cnr_file = BatchAnalysis.cnr_file,
-        sample_id = sample_id
-    }
+  call Heatmap {
+    input:
+      cnr_file = BatchAnalysis.cnr_file,
+      sample_id = sample_id
   }
 
   output {
     File cnr_file = BatchAnalysis.cnr_file
     File cns_file = BatchAnalysis.cns_file
-    File? reference_cnn_out = BuildReference.reference_cnn
-    File? scatter_plot = ScatterPlot.scatter_plot
-    File? diagram_plot = Diagram.diagram_plot
-    File? heatmap_plot = Heatmap.heatmap_plot
+    File scatter_plot = ScatterPlot.scatter_plot
+    File diagram_plot = Diagram.diagram_plot
+    File heatmap_plot = Heatmap.heatmap_plot
   }
 }
 
@@ -85,9 +74,8 @@ task BuildReference {
     File reference_fasta
     File? target_bed
     File? antitarget_bed
-    String? method = "hybrid"
+    String method = "hybrid"
     Int memory_gb = 8
-    Int disk_size_gb = 100
     Int cpu = 4
   }
 
@@ -133,9 +121,8 @@ task BatchAnalysis {
     File reference_cnn
     File? target_bed
     File? antitarget_bed
-    String? method = "hybrid"
+    String method = "hybrid"
     Int memory_gb = 8
-    Int disk_size_gb = 100
     Int cpu = 4
   }
 
@@ -185,7 +172,6 @@ task ScatterPlot {
     File cns_file
     String sample_id
     Int memory_gb = 4
-    Int disk_size_gb = 50
     Int cpu = 1
   }
 
@@ -214,7 +200,6 @@ task Diagram {
     File cnr_file
     String sample_id
     Int memory_gb = 4
-    Int disk_size_gb = 50
     Int cpu = 1
   }
 
@@ -222,8 +207,8 @@ task Diagram {
     set -eo pipefail
     
     # Generate diagram
-    cnvkit.py diagram ~{cnr_file} \
-      -o ~{sample_id}_diagram.pdf
+    cnvkit.py diagram "~{cnr_file}" \
+      -o "~{sample_id}_diagram.pdf"
   >>>
 
   output {
@@ -242,7 +227,6 @@ task Heatmap {
     File cnr_file
     String sample_id
     Int memory_gb = 4
-    Int disk_size_gb = 50
     Int cpu = 1
   }
 
@@ -250,8 +234,8 @@ task Heatmap {
     set -eo pipefail
     
     # Generate heatmap
-    cnvkit.py heatmap ~{cnr_file} \
-      -o ~{sample_id}_heatmap.pdf
+    cnvkit.py heatmap "~{cnr_file}" \
+      -o "~{sample_id}_heatmap.pdf"
   >>>
 
   output {
